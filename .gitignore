@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Screenshots
+screenshots
+screenshots/
+screenshots/*
+cities.txt
+temp_cities.txt
+test_cities.txt
