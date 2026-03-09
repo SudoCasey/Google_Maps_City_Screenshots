@@ -8,6 +8,14 @@ from urllib.parse import quote_plus
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
+try:
+    from PIL import Image
+except ImportError:
+    raise ImportError(
+        "Pillow is required to convert screenshots to WebP.\n"
+        "Install it with `pip install Pillow` or update your requirements.txt and rerun."
+    )
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -96,7 +104,7 @@ def save_city_screenshots(
         for index, city in enumerate(cities, start=1):
             search = quote_plus(f"{city}, USA")
             url = f"https://www.google.com/maps/search/{search}"
-            filename = output_dir / f"{index:03d}_{slugify(city)}.png"
+            filename = output_dir / f"{index:03d}_{slugify(city)}.webp"
 
             print(f"[{index}] Loading {city} -> {filename.name}")
             try:
@@ -163,7 +171,14 @@ def save_city_screenshots(
                     pass
 
                 time.sleep(1)  # Wait for CSS to apply
-                page.screenshot(path=str(filename), clip={"x": 250, "y": 250, "width": 500, "height": 500})
+                # Playwright only supports png/jpeg; capture as png and convert to webp
+                png_path = filename.with_suffix('.png')
+                page.screenshot(path=str(png_path), clip={"x": 250, "y": 250, "width": 500, "height": 500}, type='png')
+                try:
+                    Image.open(png_path).save(filename, format='WEBP')
+                    png_path.unlink()
+                except Exception as conv_err:
+                    print(f"    Conversion to webp failed: {conv_err}")
                 print(f"    Saved {filename.name}")
             except Exception as e:
                 print(f"    Error processing {city}: {e}")
@@ -185,7 +200,7 @@ def save_city_screenshots(
             for index, city in enumerate(cities, start=1):
                 search = quote_plus(f"{city}, USA")
                 url = f"https://www.google.com/maps/search/{search}"
-                filename = output_dir / f"{index:03d}_{slugify(city)}.png"
+                filename = output_dir / f"{index:03d}_{slugify(city)}.webp"
 
                 print(f"[{index}] Loading {city} -> {filename.name}")
                 try:
@@ -252,7 +267,13 @@ def save_city_screenshots(
                         pass
 
                     time.sleep(1)  # Wait for CSS to apply
-                    page.screenshot(path=str(filename), clip={"x": 250, "y": 250, "width": 500, "height": 500})
+                    png_path = filename.with_suffix('.png')
+                    page.screenshot(path=str(png_path), clip={"x": 250, "y": 250, "width": 500, "height": 500}, type='png')
+                    try:
+                        Image.open(png_path).save(filename, format='WEBP')
+                        png_path.unlink()
+                    except Exception as conv_err:
+                        print(f"    Conversion to webp failed: {conv_err}")
                     print(f"    Saved {filename.name}")
                 except Exception as e:
                     print(f"    Error processing {city}: {e}")
